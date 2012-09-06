@@ -24,6 +24,7 @@
  * Copyright 2011 Nexenta Systems, Inc. All rights reserved.
  * Copyright (c) 2012 by Delphix. All rights reserved.
  * Copyright (c) 2012 by Frederik Wessels. All rights reserved.
+ * Copyright 2012 Cyril Plisko. All rights reserved.
  */
 
 #include <assert.h>
@@ -1063,7 +1064,7 @@ find_spare(zpool_handle_t *zhp, void *data)
  */
 void
 print_status_config(zpool_handle_t *zhp, const char *name, nvlist_t *nv,
-    int namewidth, int depth, boolean_t isspare)
+    int namewidth, int depth, boolean_t isspare, boolean_t showguid)
 {
 	nvlist_t **child;
 	uint_t c, children;
@@ -1104,7 +1105,11 @@ print_status_config(zpool_handle_t *zhp, const char *name, nvlist_t *nv,
 		(void) printf(" %5s %5s %5s", rbuf, wbuf, cbuf);
 	}
 
-	if (nvlist_lookup_uint64(nv, ZPOOL_CONFIG_NOT_PRESENT,
+	if (showguid && (children == 0)) {
+		uint64_t guid;
+		verify(nvlist_lookup_uint64(nv, ZPOOL_CONFIG_GUID, &guid) == 0);
+		(void) printf("%22llu", (u_longlong_t)guid);
+	} else if (nvlist_lookup_uint64(nv, ZPOOL_CONFIG_NOT_PRESENT,
 	    &notpresent) == 0) {
 		char *path;
 		verify(nvlist_lookup_string(nv, ZPOOL_CONFIG_PATH, &path) == 0);
@@ -1197,7 +1202,7 @@ print_status_config(zpool_handle_t *zhp, const char *name, nvlist_t *nv,
 			continue;
 		vname = zpool_vdev_name(g_zfs, zhp, child[c], B_TRUE);
 		print_status_config(zhp, vname, child[c],
-		    namewidth, depth + 2, isspare);
+		    namewidth, depth + 2, isspare, showguid);
 		free(vname);
 	}
 }
@@ -1326,7 +1331,7 @@ print_logs(zpool_handle_t *zhp, nvlist_t *nv, int namewidth, boolean_t verbose)
 		name = zpool_vdev_name(g_zfs, zhp, child[c], B_TRUE);
 		if (verbose)
 			print_status_config(zhp, name, child[c], namewidth,
-			    2, B_FALSE);
+			    2, B_FALSE, B_FALSE);
 		else
 			print_import_config(name, child[c], namewidth, 2);
 		free(name);
@@ -3537,6 +3542,7 @@ typedef struct status_cbdata {
 	boolean_t	cb_explain;
 	boolean_t	cb_first;
 	boolean_t	cb_dedup_stats;
+	boolean_t	cb_guid;
 } status_cbdata_t;
 
 /*
@@ -3701,7 +3707,7 @@ print_spares(zpool_handle_t *zhp, nvlist_t **spares, uint_t nspares,
 	for (i = 0; i < nspares; i++) {
 		name = zpool_vdev_name(g_zfs, zhp, spares[i], B_FALSE);
 		print_status_config(zhp, name, spares[i],
-		    namewidth, 2, B_TRUE);
+		    namewidth, 2, B_TRUE, B_FALSE);
 		free(name);
 	}
 }
@@ -3721,7 +3727,7 @@ print_l2cache(zpool_handle_t *zhp, nvlist_t **l2cache, uint_t nl2cache,
 	for (i = 0; i < nl2cache; i++) {
 		name = zpool_vdev_name(g_zfs, zhp, l2cache[i], B_FALSE);
 		print_status_config(zhp, name, l2cache[i],
-		    namewidth, 2, B_FALSE);
+		    namewidth, 2, B_FALSE, B_FALSE);
 		free(name);
 	}
 }
@@ -3989,10 +3995,11 @@ status_callback(zpool_handle_t *zhp, void *data)
 			namewidth = 10;
 
 		(void) printf(gettext("config:\n\n"));
-		(void) printf(gettext("\t%-*s  %-8s %5s %5s %5s\n"), namewidth,
-		    "NAME", "STATE", "READ", "WRITE", "CKSUM");
+		(void) printf(gettext("\t%-*s  %-8s %5s %5s %5s %21s\n"), namewidth,
+		    "NAME", "STATE", "READ", "WRITE", "CKSUM",
+		    cbp->cb_guid ? "GUID" : "");
 		print_status_config(zhp, zpool_get_name(zhp), nvroot,
-		    namewidth, 0, B_FALSE);
+		    namewidth, 0, B_FALSE, cbp->cb_guid);
 
 		if (num_logs(nvroot) > 0)
 			print_logs(zhp, nvroot, namewidth, B_TRUE);
@@ -4052,6 +4059,7 @@ status_callback(zpool_handle_t *zhp, void *data)
 /*
  * zpool status [-vx] [-T d|u] [pool] ... [interval [count]]
  *
+ *	-g	Display object guid along with the names
  *	-v	Display complete error logs
  *	-x	Display only pools with potential problems
  *	-D	Display dedup status (undocumented)
@@ -4068,8 +4076,11 @@ zpool_do_status(int argc, char **argv)
 	status_cbdata_t cb = { 0 };
 
 	/* check options */
-	while ((c = getopt(argc, argv, "vxDT:")) != -1) {
+	while ((c = getopt(argc, argv, "gvxDT:")) != -1) {
 		switch (c) {
+		case 'g':
+			cb.cb_guid = B_TRUE;
+			break;
 		case 'v':
 			cb.cb_verbose = B_TRUE;
 			break;
