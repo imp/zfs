@@ -20,6 +20,7 @@
  */
 /*
  * Copyright (c) 2011 Gunnar Beutner
+ * Copyright (c) 2012 Cyril Plisko. All rights reserved.
  */
 
 
@@ -121,8 +122,22 @@ zpl_get_parent(struct dentry *child)
 	return zpl_dentry_obtain_alias(ip);
 }
 
+static int
+zpl_commit_metadata(struct inode *inode)
+{
+	cred_t *cr = CRED();
+	int error;
+
+	crhold(cr);
+	error = -zfs_fsync(inode, 0, cr);
+	crfree(cr);
+
+	return error;
+}
+
 const struct export_operations zpl_export_operations = {
 	.encode_fh	= zpl_encode_fh,
 	.fh_to_dentry	= zpl_fh_to_dentry,
-	.get_parent	= zpl_get_parent
+	.get_parent	= zpl_get_parent,
+	.commit_metadata= zpl_commit_metadata
 };
