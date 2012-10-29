@@ -129,6 +129,18 @@ unsigned long zfs_delay_scale = 1000 * 1000 * 1000 / 2000;
 hrtime_t zfs_throttle_delay = MSEC2NSEC(10);
 hrtime_t zfs_throttle_resolution = MSEC2NSEC(10);
 
+/*
+ * ZFS reserves some percentage of the pool capacity for the sake of 
+ * continuing operations when pool is practically full. When the pool
+ * is really large (petabyte scale) that translates to a significant
+ * portion of its capacity being unavailable for no good reason.
+ * This tunable (if set) limits said reservation to a given value.
+ * Note that this is only operative state. If the same pool will be
+ * re-imported on the opther system or with 'zfs+_reserve_limit' set
+ * to a different value - the pool capacity will appear different.
+ */
+unsigned long zfs_reserve_limit = 0;
+
 int
 dsl_pool_open_special_dir(dsl_pool_t *dp, const char *name, dsl_dir_t **ddp)
 {
@@ -602,7 +614,9 @@ dsl_pool_adjustedsize(dsl_pool_t *dp, boolean_t netfree)
 
 	/*
 	 * Reserve about 1.6% (1/64), or at least 32MB, for allocation
-	 * efficiency.
+	 * efficiency. However, if 'zfs_reserve_limit' is set it will cap
+	 * the reservation. On really large pools it is suboptimal to
+	 * reserve 1/64 of total pool capacity.
 	 * XXX The intent log is not accounted for, so it must fit
 	 * within this slop.
 	 *
@@ -612,6 +626,8 @@ dsl_pool_adjustedsize(dsl_pool_t *dp, boolean_t netfree)
 	 */
 	space = spa_get_dspace(dp->dp_spa);
 	resv = MAX(space >> 6, SPA_MINDEVSIZE >> 1);
+	if (zfs_reserve_limit)
+		resv = MIN(resv, zfs_reserve_limit);
 	if (netfree)
 		resv >>= 1;
 
@@ -1074,4 +1090,7 @@ MODULE_PARM_DESC(zfs_dirty_data_sync, "sync txg when this much dirty data");
 
 module_param(zfs_delay_scale, ulong, 0644);
 MODULE_PARM_DESC(zfs_delay_scale, "how quickly delay approaches infinity");
+
+module_param(zfs_reserve_limit, ulong, 0644);
+MODULE_PARM_DESC(zfs_reserve_limit, "Max pool space internal reservation");
 #endif
