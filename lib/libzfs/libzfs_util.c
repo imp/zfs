@@ -671,6 +671,25 @@ libzfs_load_module(const char *module)
 	return (libzfs_run_process("/sbin/modprobe", argv, 0));
 }
 
+static int
+libzfs_debug_init(libzfs_handle_t *hdl)
+{
+	char	*debugfile = "/var/tmp/libzfs.debug";
+
+	if (getenv("LIBZFS_DEBUG") != NULL) {
+		hdl->libzfs_debug_fd = open(debugfile, O_WRONLY);
+	} else {
+		hdl->libzfs_debug_fd = -1;
+	}
+}
+
+static int
+libzfs_debug_fini(libzfs_handle_t *hdl)
+{
+	(void) close(hdl->libzfs_debug_fd);
+	hdl->libzfs_debug_fd = -1;
+}
+
 libzfs_handle_t *
 libzfs_init(void)
 {
@@ -698,6 +717,8 @@ libzfs_init(void)
 		free(hdl);
 		return (NULL);
 	}
+
+	libzfs_debug_init(hdl);
 
 #ifdef HAVE_SETMNTENT
 	if ((hdl->libzfs_mnttab = setmntent(MNTTAB, "r")) == NULL) {
@@ -747,6 +768,7 @@ libzfs_fini(libzfs_handle_t *hdl)
 	namespace_clear(hdl);
 	libzfs_mnttab_fini(hdl);
 	libzfs_core_fini();
+	libzfs_debug_fini(hdl);
 	free(hdl);
 }
 
