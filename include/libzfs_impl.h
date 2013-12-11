@@ -51,8 +51,8 @@ extern "C" {
 #endif
 #define	VERIFY	verify
 
-#define	LIBZFS_DEBUG(hdl, fmt, ...)				\
-	libzfs_debug_print(hdl, fmt, __VA_ARGS__)
+#define	LIBZFS_DEBUG(hdl, ...)				\
+	libzfs_debug_print(hdl, __VA_ARGS__)
 
 typedef struct libzfs_fru {
 	char *zf_device;
