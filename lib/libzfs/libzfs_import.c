@@ -1184,8 +1184,11 @@ zpool_find_import_impl(libzfs_handle_t *hdl, importargs_t *iarg)
 				}
 				/* use the non-raw path for the config */
 				(void) strlcpy(end, name, pathleft);
+				LIBZFS_DEBUG(hdl, "Using %s", path);
 				if (add_config(hdl, &pools, path, i+1, config))
 					goto error;
+			} else {
+				LIBZFS_DEBUG(hdl, "Ignoring %s", name);
 			}
 		}
 
