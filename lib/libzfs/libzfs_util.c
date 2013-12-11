@@ -694,13 +694,18 @@ void
 libzfs_debug_print(libzfs_handle_t *hdl, const char *fmt, ...)
 {
 	va_list	ap;
+	char	buf[2048];
 
 	if (hdl->libzfs_debug_fd == -1)
 		return;
 
+	(void) strncpy(buf, ctime(NULL), 2048);
+	(void) strncat(buf, fmt, 2000);
+#if defined(SOMETIMES_I_REALLY_HATE_SOLARIS)
 	(void) dprintf(hdl->libzfs_debug_fd, "%s ", ctime(NULL));
+#endif
 	va_start(ap, fmt);
-	(void) vdprintf(hdl->libzfs_debug_fd, fmt, ap);
+	(void) vdprintf(hdl->libzfs_debug_fd, buf, ap);
 	va_end(ap);
 }
 
