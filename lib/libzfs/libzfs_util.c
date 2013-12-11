@@ -693,8 +693,15 @@ libzfs_debug_fini(libzfs_handle_t *hdl)
 void
 libzfs_debug_print(libzfs_handle_t *hdl, const char *fmt, ...)
 {
+	va_list	ap;
+
 	if (hdl->libzfs_debug_fd == -1)
 		return;
+
+	(void) dprintf(hdl->libzfs_debug_fd, "%s ", ctime(NULL));
+	va_start(ap, fmt);
+	(void) vdprintf(hdl->libzfs_debug_fd, fmt, ap);
+	va_end(ap);
 }
 
 libzfs_handle_t *
