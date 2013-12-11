@@ -1148,6 +1148,8 @@ zpool_find_import_impl(libzfs_handle_t *hdl, importargs_t *iarg)
 			if ((fd = openat64(dfd, name, O_RDONLY)) < 0)
 				continue;
 
+			LIBZFS_DEBUG(hdl, "Trying %s ...", name);
+
 			if ((zpool_read_label(fd, &config)) != 0) {
 				(void) close(fd);
 				(void) no_memory(hdl);
