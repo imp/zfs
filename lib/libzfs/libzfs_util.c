@@ -690,6 +690,13 @@ libzfs_debug_fini(libzfs_handle_t *hdl)
 	hdl->libzfs_debug_fd = -1;
 }
 
+void
+libzfs_debug_print(libzfs_handle_t *hdl, const char *fmt, ...)
+{
+	if (hdl->libzfs_debug_fd == -1)
+		return;
+}
+
 libzfs_handle_t *
 libzfs_init(void)
 {
