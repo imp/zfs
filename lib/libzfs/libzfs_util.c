@@ -671,7 +671,7 @@ libzfs_load_module(const char *module)
 	return (libzfs_run_process("/sbin/modprobe", argv, 0));
 }
 
-static int
+static void
 libzfs_debug_init(libzfs_handle_t *hdl)
 {
 	char	*debugfile = "/var/tmp/libzfs.debug";
@@ -683,7 +683,7 @@ libzfs_debug_init(libzfs_handle_t *hdl)
 	}
 }
 
-static int
+static void
 libzfs_debug_fini(libzfs_handle_t *hdl)
 {
 	(void) close(hdl->libzfs_debug_fd);
