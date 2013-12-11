@@ -1196,6 +1196,7 @@ zpool_find_import_impl(libzfs_handle_t *hdl, importargs_t *iarg)
 #ifdef HAVE_LIBBLKID
 skip_scanning:
 #endif
+	ZFS_DEBUG(hdl, "Building configurations");
 	ret = get_configs(hdl, &pools, iarg->can_be_active);
 
 error:
