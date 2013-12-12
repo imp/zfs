@@ -690,19 +690,26 @@ libzfs_debug_fini(libzfs_handle_t *hdl)
 	hdl->libzfs_debug_fd = -1;
 }
 
+#define LIBZFS_BUF_LEN 2048
 void
 libzfs_debug_print(libzfs_handle_t *hdl, const char *fmt, ...)
 {
+	static struct timeval prev;
+	struct timeval now = {
+		.tv_sec = 0,
+		.tv_usec = 0
+	};
 	va_list	ap;
-	time_t	now;
-	char	buf[2048];
+	char	buf[LIBZFS_BUF_LEN];
 
 	if (hdl->libzfs_debug_fd == -1)
 		return;
 
-	now = time(NULL);
-	(void) strncpy(buf, ctime(&now), 2048);
+	(void) gettimeofday(&now, NULL);
+	(void) snprintf(buf, LIBZFS_BUF_LEN, "%d.%03d ",
+	    now.tv_sec, now.tv_usec / 1000);
 	(void) strncat(buf, fmt, 2000);
+	(void) strcat(buf, "\n");
 #if defined(SOMETIMES_I_REALLY_HATE_SOLARIS)
 	(void) dprintf(hdl->libzfs_debug_fd, "%s ", ctime(NULL));
 #endif
