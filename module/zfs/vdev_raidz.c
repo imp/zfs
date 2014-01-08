@@ -1534,8 +1534,8 @@ vdev_raidz_asize(vdev_t *vd, uint64_t psize)
 	uint64_t nparity = vd->vdev_nparity;
 
 	asize = ((psize - 1) >> ashift) + 1;
-	asize += nparity * ((asize + cols - nparity - 1) / (cols - nparity));
-	asize = roundup(asize, nparity + 1) << ashift;
+	asize = cols * ((asize + cols - nparity - 1) / (cols - nparity));
+	asize = asize << ashift;
 
 	return (asize);
 }
