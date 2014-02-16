@@ -87,6 +87,32 @@ zil_stats_t zil_stats = {
 
 static kstat_t *zil_ksp;
 
+zil_replay_stats_t zil_replay_stats = {
+	{ .name = "tx_nop" },
+	{ .name = "tx_create" },
+	{ .name = "tx_mkdir" },
+	{ .name = "tx_mkxattr" },
+	{ .name = "tx_symlink" },
+	{ .name = "tx_remove" },
+	{ .name = "tx_rmdir" },
+	{ .name = "tx_link" },
+	{ .name = "tx_rename" },
+	{ .name = "tx_write" },
+	{ .name = "tx_truncate" },
+	{ .name = "tx_setattr" },
+	{ .name = "tx_acl_v0" },
+	{ .name = "tx_acl" },
+	{ .name = "tx_create_acl" },
+	{ .name = "tx_create_attr" },
+	{ .name = "tx_create_acl_attr" },
+	{ .name = "tx_mkdir_acl" },
+	{ .name = "tx_mkdir_attr" },
+	{ .name = "tx_mkdir_acl_attr" },
+	{ .name = "tx_write2" },
+};
+
+static kstat_t *zil_replay_ksp;
+
 /*
  * Disable intent logging replay.  This global ZIL switch affects all pools.
  */
@@ -1752,6 +1778,14 @@ zil_init(void)
 		zil_ksp->ks_data = &zil_stats;
 		kstat_install(zil_ksp);
 	}
+
+	zil_replay_ksp = kstat_create("zfs", 0, "zil_replay", "misc",
+	    KSTAT_TYPE_TIMER, TX_MAX_TYPE, KSTAT_FLAG_VIRTUAL);
+
+	if (zil_replay_ksp != NULL) {
+		zil_replay_ksp->ks_data = &zil_replay_stats;
+		kstat_install(zil_replay_ksp);
+	}
 }
 
 void
@@ -1762,6 +1796,11 @@ zil_fini(void)
 	if (zil_ksp != NULL) {
 		kstat_delete(zil_ksp);
 		zil_ksp = NULL;
+	}
+
+	if (zil_replay_ksp != NULL) {
+		kstat_delete(zil_replay_ksp);
+		zil_replay_ksp = NULL;
 	}
 }
 
@@ -2145,7 +2184,9 @@ zil_replay_log_record(zilog_t *zilog, lr_t *lr, void *zra, uint64_t claim_txg)
 	 * we did so. At the end of each replay function the sequence number
 	 * is updated if we are in replay mode.
 	 */
+	kstat_timer_start(&zil_replay_stats[txtype]);
 	error = zr->zr_replay[txtype](zr->zr_arg, zr->zr_lr, zr->zr_byteswap);
+	kstat_timer_stop(&zil_replay_stats[txtype]);
 	if (error != 0) {
 		/*
 		 * The DMU's dnode layer doesn't see removes until the txg
@@ -2155,7 +2196,9 @@ zil_replay_log_record(zilog_t *zilog, lr_t *lr, void *zra, uint64_t claim_txg)
 		 * specify B_FALSE for byteswap now, so we don't do it twice.
 		 */
 		txg_wait_synced(spa_get_dsl(zilog->zl_spa), 0);
+		kstat_timer_start(&zil_replay_stats[txtype]);
 		error = zr->zr_replay[txtype](zr->zr_arg, zr->zr_lr, B_FALSE);
+		kstat_timer_stop(&zil_replay_stats[txtype]);
 		if (error != 0)
 			return (zil_replay_error(zilog, lr, error));
 	}

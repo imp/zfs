@@ -430,6 +430,8 @@ typedef struct zil_stats {
 
 extern zil_stats_t zil_stats;
 
+typedef kstat_timer_t zil_replay_stats_t[TX_MAX_TYPE];
+
 #define	ZIL_STAT_INCR(stat, val) \
     atomic_add_64(&zil_stats.stat.value.ui64, (val));
 #define	ZIL_STAT_BUMP(stat) \
