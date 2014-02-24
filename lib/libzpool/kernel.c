@@ -270,6 +270,16 @@ void
 kstat_runq_back_to_waitq(kstat_io_t *kiop)
 {}
 
+/*ARGSUSED*/
+void
+kstat_timer_start(kstat_timer_t *ktp)
+{}
+
+/*ARGSUSED*/
+void
+kstat_timer_stop(kstat_timer_t *ktp)
+{}
+
 void
 kstat_set_raw_ops(kstat_t *ksp,
     int (*headers)(char *buf, size_t size),

@@ -380,6 +380,8 @@ extern void kstat_runq_enter(kstat_io_t *);
 extern void kstat_runq_exit(kstat_io_t *);
 extern void kstat_waitq_to_runq(kstat_io_t *);
 extern void kstat_runq_back_to_waitq(kstat_io_t *);
+extern void kstat_timer_start(kstat_timer_t *);
+extern void kstat_timer_stop(kstat_timer_t *);
 extern void kstat_set_raw_ops(kstat_t *ksp,
     int (*headers)(char *buf, size_t size),
     int (*data)(char *buf, size_t size, void *data),
