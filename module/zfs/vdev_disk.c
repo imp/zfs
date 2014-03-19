@@ -446,7 +446,7 @@ BIO_END_IO_PROTO(vdev_disk_physio_completion, bio, size, error)
 	if (dr->dr_error == 0)
 		dr->dr_error = -error;
 
-	/* Drop reference aquired by __vdev_disk_physio */
+	/* Drop reference acquired by __vdev_disk_physio */
 	rc = vdev_disk_dio_put(dr);
 
 	/* Wake up synchronous waiter this is the last outstanding bio */
